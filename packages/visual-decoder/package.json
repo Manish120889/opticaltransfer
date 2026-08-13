@@ -1,0 +1,17 @@
+{
+  "name": "@optical/visual-decoder",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@optical/codec-core": "*",
+    "@optical/erasure-recovery": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "optical-file-transfer-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Air-gapped optical-only file transfer monorepo built with dense color visual codes, fountain erasure coding, and computer vision",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web-app",
+    "build": "npm run build --workspaces",
+    "test": "node --import tsx/esm tests/run_tests.ts",
+    "benchmark": "node --import tsx/esm tools/benchmark.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "tsx": "^4.19.0"
+  }
+}

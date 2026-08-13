@@ -1,0 +1,16 @@
+{
+  "name": "@optical/visual-renderer",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@optical/codec-core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

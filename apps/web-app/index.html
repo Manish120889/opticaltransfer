@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antigravity Optical Air-Gapped File Transfer</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950 min-h-screen flex flex-col">
+
+  <!-- Main Top Bar Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/20">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-extrabold tracking-tight text-lg bg-gradient-to-r from-slate-100 via-slate-200 to-cyan-400 bg-clip-text text-transparent">OPTICAL AIRGAP</h1>
+          <p class="text-xs text-slate-400 font-mono">Zero-Network Screen-to-Camera VLC</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center space-x-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800/80">
+        <button id="tab-sender" class="nav-tab active-tab">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          <span>Sender (Screen)</span>
+        </button>
+        <button id="tab-receiver" class="nav-tab">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+          <span>Receiver (Camera)</span>
+        </button>
+        <button id="tab-simulator" class="nav-tab">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+          <span>Channel Simulator</span>
+        </button>
+        <button id="tab-benchmark" class="nav-tab">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span>Benchmarks</span>
+        </button>
+        <button id="tab-specs" class="nav-tab">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <span>Specs & Report</span>
+        </button>
+      </nav>
+
+      <!-- Status Indicator -->
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
+          Air-Gap Active
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Main Body -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- SENDER TAB CONTENT -->
+    <div id="content-sender" class="tab-content">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Controls Sidebar -->
+        <div class="lg:col-span-4 space-y-6">
+          <!-- File Selection Box -->
+          <div class="card p-5">
+            <h2 class="card-title mb-4">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+              <span>Payload Source</span>
+            </h2>
+
+            <div id="dropzone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500 transition-colors rounded-xl p-6 text-center cursor-pointer bg-slate-900/40">
+              <input type="file" id="file-input" class="hidden" />
+              <svg class="w-10 h-10 text-slate-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p class="text-sm font-medium text-slate-300">Drop file here or click to browse</p>
+              <p class="text-xs text-slate-500 mt-1">Supports images, docs, code, zips (1MB - 50MB target)</p>
+            </div>
+
+            <!-- Pre-loaded Sample Selector -->
+            <div class="mt-3 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Or load test sample:</span>
+              <div class="space-x-1">
+                <button id="btn-sample-txt" class="btn-xs">Sample Text</button>
+                <button id="btn-sample-code" class="btn-xs">Source Code</button>
+                <button id="btn-sample-binary" class="btn-xs">500KB Binary</button>
+              </div>
+            </div>
+
+            <!-- File Metadata Card -->
+            <div id="file-meta-card" class="mt-4 p-3 bg-slate-900 rounded-lg border border-slate-800 hidden">
+              <div class="flex items-center justify-between text-sm">
+                <span id="meta-filename" class="font-medium text-slate-200 truncate max-w-[200px]">file.txt</span>
+                <span id="meta-size" class="text-xs text-slate-400 font-mono">0 KB</span>
+              </div>
+              <div class="mt-2 space-y-1 text-xs font-mono text-slate-400">
+                <div class="flex justify-between"><span>Compression:</span><span id="meta-comp-ratio" class="text-cyan-400">1.0x (Bypassed)</span></div>
+                <div class="flex justify-between"><span>SHA-256:</span><span id="meta-sha256" class="text-slate-300 text-[10px] truncate max-w-[160px]">...</span></div>
+                <div class="flex justify-between"><span>Blocks (K):</span><span id="meta-blocks" class="text-emerald-400">0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transmission Presets & Config -->
+          <div class="card p-5 space-y-4">
+            <h2 class="card-title">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+              <span>Codec Configuration</span>
+            </h2>
+
+            <div>
+              <label class="label-text">Visual Transmission Profile</label>
+              <div class="grid grid-cols-3 gap-2 mt-1">
+                <button id="profile-safe" class="preset-btn">
+                  <span class="font-bold text-emerald-400">Safe</span>
+                  <span class="text-[10px] text-slate-400 block">4 colors / 15fps</span>
+                </button>
+                <button id="profile-fast" class="preset-btn active-preset">
+                  <span class="font-bold text-cyan-400">Fast</span>
+                  <span class="text-[10px] text-slate-400 block">16 colors / 30fps</span>
+                </button>
+                <button id="profile-turbo" class="preset-btn">
+                  <span class="font-bold text-indigo-400">Turbo</span>
+                  <span class="text-[10px] text-slate-400 block">64 colors / 45fps</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Target FPS Slider -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Broadcast Frame Rate</span>
+                <span id="fps-label" class="font-mono text-cyan-400">30 FPS</span>
+              </div>
+              <input type="range" id="fps-slider" min="5" max="60" value="30" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-2" />
+            </div>
+
+            <!-- AES-256 Encryption -->
+            <div class="pt-2 border-t border-slate-800">
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-xs font-medium text-slate-300">AES-256-GCM Encryption</span>
+                <input type="checkbox" id="encrypt-toggle" class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0" />
+              </label>
+              <div id="passphrase-container" class="mt-2 hidden">
+                <input type="password" id="sender-passphrase" placeholder="Session Passphrase..." class="input-field text-xs" />
+              </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="pt-2 flex gap-2">
+              <button id="btn-start-send" class="btn-primary flex-1">
+                <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+                Start Broadcast
+              </button>
+              <button id="btn-pause-send" class="btn-secondary hidden">Pause</button>
+              <button id="btn-fullscreen-send" class="btn-secondary">Fullscreen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Display Area -->
+        <div class="lg:col-span-8 flex flex-col items-center justify-center">
+          <div class="card p-6 w-full flex flex-col items-center bg-slate-950/80 border-slate-800">
+            <div class="w-full flex justify-between items-center mb-4 text-xs font-mono text-slate-400">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>STATUS: <strong id="send-status" class="text-slate-200">IDLE</strong></span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <span>FINGERPRINT: <strong id="sender-fp" class="text-cyan-400">#----</strong></span>
+                <span>FRAME: <strong id="sender-frame-count" class="text-emerald-400">0</strong></span>
+              </div>
+            </div>
+
+            <!-- Screen Stream Renderer Canvas -->
+            <div class="relative w-full aspect-square max-w-[540px] bg-black rounded-xl overflow-hidden shadow-2xl shadow-cyan-950/30 border border-slate-800">
+              <canvas id="sender-canvas" width="600" height="600" class="w-full h-full object-contain"></canvas>
+              
+              <!-- Idle Overlay -->
+              <div id="sender-idle-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-4 border border-cyan-500/20">
+                  <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-200">Visual Screen Transmitter Ready</h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">Select a file on the left sidebar and click Start Broadcast to stream dense color frames to the receiving camera.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECEIVER TAB CONTENT -->
+    <div id="content-receiver" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Live Camera Viewfinder -->
+        <div class="lg:col-span-8">
+          <div class="card p-5 relative">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="card-title">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                <span>Camera Viewfinder & Homography HUD</span>
+              </h2>
+              <button id="btn-toggle-camera" class="btn-xs flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <span>Switch Camera</span>
+              </button>
+            </div>
+
+            <!-- Video Feed Container -->
+            <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-800">
+              <video id="receiver-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+              <canvas id="receiver-hud-canvas" width="800" height="450" class="w-full h-full object-contain"></canvas>
+              
+              <!-- Camera Off Placeholder -->
+              <div id="camera-off-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4 border border-indigo-500/20">
+                  <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-200">Receiver Camera Inactive</h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">Click Start Camera Receiver to enable live camera capture and optical screen tracking.</p>
+                <button id="btn-start-camera" class="btn-primary mt-4">Start Camera Receiver</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry & Recovery Status -->
+        <div class="lg:col-span-4 space-y-6">
+          <!-- Progress Card -->
+          <div class="card p-5">
+            <h2 class="card-title mb-4">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span>Fountain Decoding Telemetry</span>
+            </h2>
+
+            <!-- Progress Bar -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-mono">
+                <span class="text-slate-400">Reconstruction</span>
+                <span id="recv-progress-pct" class="text-emerald-400 font-bold">0.0%</span>
+              </div>
+              <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+                <div id="recv-progress-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-300 w-0"></div>
+              </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-3 mt-4 text-xs font-mono">
+              <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
+                <span class="text-slate-500 block text-[10px]">THROUGHPUT</span>
+                <strong id="recv-stat-speed" class="text-cyan-400 text-sm">0.0 KB/s</strong>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
+                <span class="text-slate-500 block text-[10px]">FRAME LOSS RATE</span>
+                <strong id="recv-stat-loss" class="text-amber-400 text-sm">0.0%</strong>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
+                <span class="text-slate-500 block text-[10px]">BLOCKS SOLVED (K)</span>
+                <strong id="recv-stat-blocks" class="text-slate-200 text-sm">0 / 0</strong>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-800">
+                <span class="text-slate-500 block text-[10px]">CAPTURED FRAMES</span>
+                <strong id="recv-stat-captured" class="text-slate-200 text-sm">0</strong>
+              </div>
+            </div>
+
+            <!-- Decrypted / Save Container -->
+            <div id="recv-file-ready-card" class="mt-5 p-4 bg-emerald-950/30 border border-emerald-500/30 rounded-xl hidden">
+              <div class="flex items-center space-x-2 text-emerald-400 mb-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span class="font-bold text-sm">Payload Reconstructed & Verified</span>
+              </div>
+              <p class="text-xs text-slate-300 font-mono mb-3 truncate" id="recv-ready-filename">filename.ext</p>
+              <button id="btn-download-file" class="btn-primary w-full text-xs py-2">Download Received File</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATOR TAB CONTENT -->
+    <div id="content-simulator" class="tab-content hidden">
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+              <span>Virtual Screen-to-Camera Optical Channel Simulator</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Tests end-to-end optical transmission, noise injection, and 50% frame loss in browser without physical camera.</p>
+          </div>
+          <button id="btn-run-simulation" class="btn-primary">
+            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+            Run Optical Simulation
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Virtual Sender Canvas -->
+          <div class="space-y-2">
+            <span class="text-xs font-mono text-cyan-400">VIRTUAL SENDER CANVAS</span>
+            <div class="aspect-square bg-black rounded-xl overflow-hidden border border-slate-800">
+              <canvas id="sim-sender-canvas" width="400" height="400" class="w-full h-full object-contain"></canvas>
+            </div>
+          </div>
+
+          <!-- Virtual Noisy Receiver Canvas -->
+          <div class="space-y-2">
+            <span class="text-xs font-mono text-emerald-400">VIRTUAL NOISY CAMERA SENSOR (35% Frame Drop + Blur)</span>
+            <div class="aspect-square bg-black rounded-xl overflow-hidden border border-slate-800 relative">
+              <canvas id="sim-receiver-canvas" width="400" height="400" class="w-full h-full object-contain"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulation Logs -->
+        <div class="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 h-40 overflow-y-auto" id="sim-logs">
+          <p class="text-slate-500">[System] Channel simulator ready. Click "Run Optical Simulation" to start.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BENCHMARKS TAB CONTENT -->
+    <div id="content-benchmark" class="tab-content hidden">
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-100">In-App Throughput & Calibration Benchmark</h2>
+            <p class="text-xs text-slate-400 mt-1">Measures encode/decode throughput (KB/s) across Safe, Fast, and Turbo modes on your system hardware.</p>
+          </div>
+          <button id="btn-run-benchmark" class="btn-primary">Run Suite Benchmark</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Safe Mode Metric Card -->
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-slate-800 text-center">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-2">Safe Mode</span>
+            <div class="text-3xl font-extrabold text-slate-100 font-mono mb-1" id="bench-safe-speed">-- KB/s</div>
+            <span class="text-[11px] text-slate-400 block" id="bench-safe-detail">24x24 grid / 4 colors</span>
+          </div>
+
+          <!-- Fast Mode Metric Card -->
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-cyan-500/30 text-center bg-cyan-950/10">
+            <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider block mb-2">Fast Mode (Default)</span>
+            <div class="text-3xl font-extrabold text-slate-100 font-mono mb-1" id="bench-fast-speed">-- KB/s</div>
+            <span class="text-[11px] text-slate-400 block" id="bench-fast-detail">36x36 grid / 16 colors</span>
+          </div>
+
+          <!-- Turbo Mode Metric Card -->
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-indigo-500/30 text-center bg-indigo-950/10">
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-2">Turbo Mode</span>
+            <div class="text-3xl font-extrabold text-slate-100 font-mono mb-1" id="bench-turbo-speed">-- KB/s</div>
+            <span class="text-[11px] text-slate-400 block" id="bench-turbo-detail">48x48 grid / 64 colors</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPECS & REPORT TAB CONTENT -->
+    <div id="content-specs" class="tab-content hidden">
+      <div class="card p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-100">Technical Specifications & Architecture Report</h2>
+          <p class="text-xs text-slate-400 mt-1">Grounding evidence and specs based on Manish Dadhwal's Optical File Transfer Report.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300">
+          <div class="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+            <h3 class="font-bold text-cyan-400 text-base">File Container & Fountain Coding</h3>
+            <p class="text-xs text-slate-400">Uses Luby Transform rateless erasure codes. Payload is split into K source blocks and encoded into randomized XOR repair packets.</p>
+            <ul class="list-disc list-inside text-xs text-slate-400 space-y-1 pt-1">
+              <li>CRC32C checksum protection per frame</li>
+              <li>SHA-256 post-reconstruction validation</li>
+              <li>AES-256-GCM client-side encryption</li>
+            </ul>
+          </div>
+
+          <div class="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+            <h3 class="font-bold text-emerald-400 text-base">Computer Vision & Homography</h3>
+            <p class="text-xs text-slate-400">Detects 4 corner finder alignment patterns to compute a 3x3 homography perspective transform ($H$), enabling accurate frame sampling under tilt and skew.</p>
+            <ul class="list-disc list-inside text-xs text-slate-400 space-y-1 pt-1">
+              <li>Dynamic color swatch centroid calibration bar</li>
+              <li>Bilinear pixel interpolation sampling</li>
+              <li>Dropless recovery with up to 50% frame loss</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- App Main Bundle Loader -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

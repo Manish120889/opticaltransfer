@@ -1,0 +1,20 @@
+{
+  "name": "windows-sender-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@optical/codec-core": "*",
+    "@optical/compression": "*",
+    "@optical/crypto": "*",
+    "@optical/erasure-recovery": "*",
+    "@optical/visual-renderer": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.1"
+  }
+}
