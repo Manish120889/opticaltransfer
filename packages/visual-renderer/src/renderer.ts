@@ -1,4 +1,4 @@
-import { CodecProfile, TRANSMISSION_PROFILES, crc32c } from '../../codec-core/src/index.js';
+import { CodecProfile, TRANSMISSION_PROFILES, crc32c, packBitsToColorIndices } from '../../codec-core/src/index.js';
 
 export interface FrameRenderData {
   frameId: number;
@@ -74,30 +74,15 @@ export class VisualFrameRenderer {
 
     const totalTiles = profile.gridCols * profile.gridRows;
     const bitsPerTile = profile.bitsPerTile;
-    const mask = (1 << bitsPerTile) - 1;
 
-    let bitPos = 0;
+    const indices = packBitsToColorIndices(payloadBytes, bitsPerTile, totalTiles);
+
     for (let row = 0; row < profile.gridRows; row++) {
       for (let col = 0; col < profile.gridCols; col++) {
         const tileIndex = row * profile.gridCols + col;
-        const byteIdx = Math.floor(bitPos / 8);
-        const bitOffset = bitPos % 8;
-
-        let paletteIdx = 0;
-        if (byteIdx < payloadBytes.length) {
-          paletteIdx = (payloadBytes[byteIdx] >> (8 - bitOffset - bitsPerTile)) & mask;
-          if (bitOffset + bitsPerTile > 8 && byteIdx + 1 < payloadBytes.length) {
-            const extra = (bitOffset + bitsPerTile) - 8;
-            paletteIdx = ((payloadBytes[byteIdx] << extra) | (payloadBytes[byteIdx + 1] >> (8 - extra))) & mask;
-          }
-        } else {
-          paletteIdx = tileIndex % profile.palette.length; // Pattern fill for trailing space
-        }
-
+        const paletteIdx = indices[tileIndex];
         this.ctx.fillStyle = profile.palette[paletteIdx % profile.palette.length];
         this.ctx.fillRect(gridX + col * cellW, gridY + row * cellH, cellW - 0.5, cellH - 0.5);
-
-        bitPos += bitsPerTile;
       }
     }
   }

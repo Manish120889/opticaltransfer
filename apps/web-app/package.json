@@ -12,11 +12,14 @@
     "@optical/compression": "*",
     "@optical/crypto": "*",
     "@optical/erasure-recovery": "*",
+    "@optical/visual-decoder": "*",
     "@optical/visual-renderer": "*",
-    "@optical/visual-decoder": "*"
+    "@types/qrcode": "^1.5.6",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
-    "vite": "^5.4.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vite": "^5.4.1"
   }
 }
