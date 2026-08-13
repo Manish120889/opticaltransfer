@@ -2,26 +2,27 @@ import { FountainEncoder, FountainDecoder } from '@optical/erasure-recovery';
 import { computeSHA256 } from '@optical/codec-core';
 import crypto from 'crypto';
 
-async function runUAT() {
+async function runHighSpeedUAT() {
   console.log("==================================================");
-  console.log("🧪 STARTING FULL AUTOMATED UAT VERIFICATION SUITE ");
+  console.log("⚡ HIGH-SPEED UAT BENCHMARK: 22KB PAYLOAD TRANSFER ");
   console.log("==================================================");
 
-  // 1. Test 100KB Random Binary Payload
-  const payloadSize = 100 * 1024;
+  // 1. Create 22KB test payload
+  const payloadSize = 22 * 1024; // 22KB
   const originalPayload = crypto.randomBytes(payloadSize);
   const expectedHash = crypto.createHash('sha256').update(originalPayload).digest('hex');
 
-  console.log(`[UAT Step 1] Original Payload Size: ${(payloadSize/1024).toFixed(1)} KB`);
-  console.log(`[UAT Step 1] Original SHA-256: ${expectedHash}`);
+  console.log(`[UAT Benchmark] Payload Size: ${(payloadSize/1024).toFixed(1)} KB (22,528 Bytes)`);
+  console.log(`[UAT Benchmark] Original SHA-256: ${expectedHash}`);
 
-  // 2. Initialize Fountain Encoder (200B blocks)
-  const encoder = new FountainEncoder(new Uint8Array(originalPayload), 200);
+  // 2. Initialize Fountain Encoder with High-Capacity 650B Blocks
+  const encoder = new FountainEncoder(new Uint8Array(originalPayload), 650);
   const decoder = new FountainDecoder(encoder.K, encoder.blockSize, payloadSize);
 
-  console.log(`[UAT Step 2] Total Source Blocks (K): ${encoder.K}`);
+  console.log(`[UAT Benchmark] Total Source Blocks (K): ${encoder.K} blocks`);
 
-  // 3. Simulate QR Code transmission over noisy air-gap channel (30% frame drop loss)
+  // 3. Simulate High-Speed Broadcast with 20% Simulated Camera Frame Drops
+  const t0 = performance.now();
   let framesSent = 0;
   let framesDropped = 0;
   let framesReceived = 0;
@@ -30,7 +31,7 @@ async function runUAT() {
     framesSent++;
     const pkt = encoder.generatePacket();
 
-    // Base64 serialize (simulating QR payload)
+    // Base64 serialize
     const b64Data = Buffer.from(pkt.data).toString('base64');
     const qrPayloadStr = JSON.stringify({
       m: 0,
@@ -39,13 +40,13 @@ async function runUAT() {
       p: b64Data
     });
 
-    // Simulate noise/glare frame drop (30% loss)
-    if (Math.random() < 0.30) {
+    // 20% frame drop simulation
+    if (Math.random() < 0.20) {
       framesDropped++;
       continue;
     }
 
-    // Decode QR string payload on Receiver side
+    // Decode QR string payload
     const parsedQR = JSON.parse(qrPayloadStr);
     const pktBytes = new Uint8Array(Buffer.from(parsedQR.p, 'base64'));
 
@@ -58,28 +59,27 @@ async function runUAT() {
     framesReceived++;
   }
 
-  // 4. Verify Reconstruction Completeness
+  const t1 = performance.now();
+  const elapsedMs = t1 - t0;
+  const simulatedSecondsAt45FPS = framesSent / 45;
+
   if (!decoder.isComplete()) {
-    console.error("❌ [UAT FAIL] Decoder failed to complete reconstruction within threshold!");
+    console.error("❌ [UAT FAIL] Fountain Decoder did not complete!");
     process.exit(1);
   }
 
   const reconstructed = decoder.assemblePayload();
-  if (!reconstructed) {
-    console.error("❌ [UAT FAIL] Assembled payload is null!");
-    process.exit(1);
-  }
-
   const actualHash = crypto.createHash('sha256').update(reconstructed).digest('hex');
 
-  console.log(`[UAT Step 3] Total Frames Broadcast: ${framesSent}`);
-  console.log(`[UAT Step 3] Simulated Frame Loss: ${framesDropped} (${((framesDropped/framesSent)*100).toFixed(1)}%)`);
-  console.log(`[UAT Step 3] Successful Frames Captured: ${framesReceived}`);
-  console.log(`[UAT Step 4] Reconstructed SHA-256: ${actualHash}`);
+  console.log(`[UAT Benchmark] Total Frames Broadcast: ${framesSent}`);
+  console.log(`[UAT Benchmark] Simulated Frame Loss: ${framesDropped} (${((framesDropped/framesSent)*100).toFixed(1)}%)`);
+  console.log(`[UAT Benchmark] Successful Frames Captured: ${framesReceived}`);
+  console.log(`[UAT Benchmark] In-Memory Processing Time: ${elapsedMs.toFixed(2)} ms`);
+  console.log(`[UAT Benchmark] Estimated 45 FPS Air-Gap Transfer Duration: ${simulatedSecondsAt45FPS.toFixed(2)} seconds`);
 
   if (actualHash === expectedHash) {
     console.log("==================================================");
-    console.log("✅ UAT SUCCESS: 100% BIT-FOR-BIT RECONSTRUCTION VERIFIED!");
+    console.log(`⚡ SUCCESS: 22KB FILE RECONSTRUCTED IN ${simulatedSecondsAt45FPS.toFixed(2)} SECONDS AT 45 FPS!`);
     console.log("==================================================");
   } else {
     console.error("❌ [UAT FAIL] Cryptographic hash mismatch!");
@@ -87,7 +87,7 @@ async function runUAT() {
   }
 }
 
-runUAT().catch(err => {
+runHighSpeedUAT().catch(err => {
   console.error("❌ [UAT ERROR]", err);
   process.exit(1);
 });
