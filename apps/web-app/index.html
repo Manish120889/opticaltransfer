@@ -94,7 +94,8 @@
               <div class="space-x-1">
                 <button id="btn-sample-txt" class="btn-xs">Sample Text</button>
                 <button id="btn-sample-code" class="btn-xs">Source Code</button>
-                <button id="btn-sample-binary" class="btn-xs">500KB Binary</button>
+                <button id="btn-sample-crypto" class="btn-xs border-amber-500/30 text-amber-400">Bitcoin PSBT</button>
+                <button id="btn-sample-binary" class="btn-xs">22KB Binary</button>
               </div>
             </div>
 
@@ -297,7 +298,10 @@
                 <span class="font-bold text-sm">Payload Reconstructed & Verified</span>
               </div>
               <p class="text-xs text-slate-300 font-mono mb-3 truncate" id="recv-ready-filename">filename.ext</p>
-              <button id="btn-download-file" class="btn-primary w-full text-xs py-2">Download Received File</button>
+              <div class="space-y-2">
+                <button id="btn-download-file" class="btn-primary w-full text-xs py-2">Download Received File</button>
+                <button id="btn-download-audit" class="btn-secondary w-full text-xs py-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50">📜 Download Compliance Audit Receipt (.audit.json)</button>
+              </div>
             </div>
           </div>
         </div>
