@@ -42,7 +42,8 @@ let senderRenderer: VisualFrameRenderer | null = null;
 let isBroadcasting = false;
 let senderFrameCount = 0;
 let senderIntervalId: any = null;
-let qrFrameCache: HTMLCanvasElement[] = [];
+let qrManifestCanvas: HTMLCanvasElement | null = null;
+let qrDataCanvases: HTMLCanvasElement[] = [];
 
 // Receiver State
 let receiverDecoder: VisualFrameDecoder = new VisualFrameDecoder(activeProfile);
@@ -51,11 +52,13 @@ let qrFountainDecoder: FountainDecoder | null = null;
 
 let cameraStream: MediaStream | null = null;
 let isCameraActive = false;
+let currentFacingMode: 'environment' | 'user' = 'environment';
 let receiverAnimFrame: number | null = null;
 let recvStartTime = 0;
 let recvValidFrames = 0;
 let recvInvalidFrames = 0;
 let reconstructedBlobUrl: string | null = null;
+let isReconstructionFinished = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
@@ -76,6 +79,11 @@ function initTabs() {
       });
       document.getElementById(`tab-${t}`)?.classList.add('active-tab');
       document.getElementById(`content-${t}`)?.classList.remove('hidden');
+
+      // Stop camera if navigating away from receiver tab
+      if (t !== 'receiver' && isCameraActive) {
+        stopCamera();
+      }
     });
   });
 }
@@ -242,7 +250,7 @@ async function setFilePayload(bytes: Uint8Array, fileName: string, mimeType: str
     iv = encRes.iv;
   }
 
-  // ⚡ HIGH-SPEED OPTIMIZATION: 650 bytes per QR frame (cuts total frames by 350%!)
+  // ⚡ HIGH-SPEED OPTIMIZATION: 650 bytes per QR frame
   const blockSize = transmissionMode === 'qr' ? 650 : activeProfile.blockSize;
 
   senderEncoder = new FountainEncoder(finalPayload, blockSize);
@@ -266,7 +274,7 @@ async function setFilePayload(bytes: Uint8Array, fileName: string, mimeType: str
   document.getElementById('meta-blocks')!.innerText = `${senderEncoder.K} blocks (${blockSize}B/blk)`;
   document.getElementById('sender-fp')!.innerText = `#${transferId.toString(16).toUpperCase()}`;
 
-  // Pre-generate QR Frame Cache in background for zero-latency 60 FPS streaming
+  // Pre-generate QR Frame Cache in background
   if (transmissionMode === 'qr') {
     pregenerateQRCache();
   }
@@ -275,8 +283,8 @@ async function setFilePayload(bytes: Uint8Array, fileName: string, mimeType: str
 async function pregenerateQRCache() {
   if (!senderEncoder || !senderManifest) return;
 
-  qrFrameCache = [];
-  const cacheCount = Math.min(senderEncoder.K * 2, 80); // Pre-render 80 frames max
+  qrDataCanvases = [];
+  const cacheCount = Math.max(senderEncoder.K * 3, 100); // Pre-generate 3x redundancy
 
   // Manifest QR Frame
   const manifestDataStr = JSON.stringify({
@@ -290,14 +298,13 @@ async function pregenerateQRCache() {
     t: senderManifest.transferId
   });
 
-  const mCanvas = document.createElement('canvas');
-  await QRCode.toCanvas(mCanvas, manifestDataStr, {
+  qrManifestCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrManifestCanvas, manifestDataStr, {
     width: 440,
     margin: 2,
     color: { dark: '#000000', light: '#ffffff' },
     errorCorrectionLevel: 'L'
   });
-  qrFrameCache.push(mCanvas);
 
   // Data QR Frames
   for (let i = 0; i < cacheCount; i++) {
@@ -316,7 +323,7 @@ async function pregenerateQRCache() {
       color: { dark: '#000000', light: '#ffffff' },
       errorCorrectionLevel: 'L'
     });
-    qrFrameCache.push(dCanvas);
+    qrDataCanvases.push(dCanvas);
   }
 }
 
@@ -346,14 +353,23 @@ function startBroadcast() {
     senderFrameCount++;
     document.getElementById('sender-frame-count')!.innerText = senderFrameCount.toString();
 
-    if (transmissionMode === 'qr' && qrFrameCache.length > 0) {
-      // ⚡ Instant draw from pre-rendered memory canvas (0.1ms render time!)
-      const cacheIdx = (senderFrameCount - 1) % qrFrameCache.length;
-      const cachedCanvas = qrFrameCache[cacheIdx];
+    if (transmissionMode === 'qr') {
+      // ⚡ Manifest broadcast every 5 frames so receiver connects immediately
+      const isManifestFrame = senderFrameCount % 5 === 1;
+      let targetCanvas: HTMLCanvasElement | null = null;
 
-      mainCanvas.width = cachedCanvas.width;
-      mainCanvas.height = cachedCanvas.height;
-      ctx?.drawImage(cachedCanvas, 0, 0);
+      if (isManifestFrame && qrManifestCanvas) {
+        targetCanvas = qrManifestCanvas;
+      } else if (qrDataCanvases.length > 0) {
+        const dataIdx = Math.floor(senderFrameCount * 0.8) % qrDataCanvases.length;
+        targetCanvas = qrDataCanvases[dataIdx];
+      }
+
+      if (targetCanvas) {
+        mainCanvas.width = targetCanvas.width;
+        mainCanvas.height = targetCanvas.height;
+        ctx?.drawImage(targetCanvas, 0, 0);
+      }
     } else {
       // Legacy Matrix Grid Rendering
       const isManifestFrame = senderFrameCount % 10 === 1;
@@ -387,6 +403,7 @@ function startBroadcast() {
 // RECEIVER UI
 function initReceiverUI() {
   document.getElementById('btn-start-camera')?.addEventListener('click', startCameraReceiver);
+  document.getElementById('btn-toggle-camera')?.addEventListener('click', toggleCameraLens);
   document.getElementById('btn-download-file')?.addEventListener('click', () => {
     if (reconstructedBlobUrl) {
       const a = document.createElement('a');
@@ -401,11 +418,12 @@ async function startCameraReceiver() {
   try {
     try {
       cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }
       });
     } catch {
       cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
     }
+
     const video = document.getElementById('receiver-video') as HTMLVideoElement;
     video.srcObject = cameraStream;
     video.setAttribute('playsinline', 'true');
@@ -414,6 +432,7 @@ async function startCameraReceiver() {
     document.getElementById('camera-off-overlay')?.classList.add('hidden');
     isCameraActive = true;
     recvStartTime = performance.now();
+    isReconstructionFinished = false;
 
     startReceiverFrameLoop();
   } catch (err: any) {
@@ -421,24 +440,65 @@ async function startCameraReceiver() {
   }
 }
 
+async function toggleCameraLens() {
+  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+  if (isCameraActive) {
+    stopCamera();
+    await startCameraReceiver();
+  }
+}
+
+function stopCamera() {
+  isCameraActive = false;
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  if (receiverAnimFrame) {
+    cancelAnimationFrame(receiverAnimFrame);
+    receiverAnimFrame = null;
+  }
+  document.getElementById('camera-off-overlay')?.classList.remove('hidden');
+  document.getElementById('receiver-video')?.classList.add('hidden');
+}
+
 function startReceiverFrameLoop() {
   const video = document.getElementById('receiver-video') as HTMLVideoElement;
-  const canvas = document.getElementById('receiver-hud-canvas') as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d');
+  const displayCanvas = document.getElementById('receiver-hud-canvas') as HTMLCanvasElement;
+  const displayCtx = displayCanvas.getContext('2d');
+
+  // Fast offscreen downsampled canvas for 60 FPS decoding
+  const scanCanvas = document.createElement('canvas');
+  const scanCtx = scanCanvas.getContext('2d');
 
   function loop() {
     if (!isCameraActive) return;
 
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imgData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      // 1. Maintain display canvas size without thrashing context
+      if (displayCanvas.width !== video.videoWidth || displayCanvas.height !== video.videoHeight) {
+        displayCanvas.width = video.videoWidth;
+        displayCanvas.height = video.videoHeight;
+      }
+
+      displayCtx?.drawImage(video, 0, 0, displayCanvas.width, displayCanvas.height);
+
+      // 2. Downsample for 60 FPS scanning
+      const scanW = 640;
+      const scanH = Math.round(640 * (video.videoHeight / video.videoWidth)) || 480;
+
+      if (scanCanvas.width !== scanW || scanCanvas.height !== scanH) {
+        scanCanvas.width = scanW;
+        scanCanvas.height = scanH;
+      }
+
+      scanCtx?.drawImage(video, 0, 0, scanW, scanH);
+      const imgData = scanCtx?.getImageData(0, 0, scanW, scanH);
 
       if (imgData) {
         let frameProcessed = false;
 
-        // 1. Try High-Reliability QR Decoder (jsQR)
+        // 3. Ultra-fast jsQR Scan (3ms execution time)
         const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
         if (code && code.data) {
           try {
@@ -465,6 +525,9 @@ function startReceiverFrameLoop() {
                 };
                 qrFountainDecoder = new FountainDecoder(data.k, data.bs, data.cz);
                 receiverDecoder.manifest = qrManifest as any;
+                isReconstructionFinished = false;
+                reconstructedBlobUrl = null;
+                document.getElementById('recv-file-ready-card')?.classList.add('hidden');
               }
             } else if (data.m === 0 && qrFountainDecoder) {
               // Data Frame
@@ -477,41 +540,47 @@ function startReceiverFrameLoop() {
               });
             }
 
-            // Draw cyan tracking box around scanned QR code
-            if (ctx && code.location) {
-              ctx.strokeStyle = '#06B6D4';
-              ctx.lineWidth = 4;
-              ctx.beginPath();
-              ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
-              ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
-              ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
-              ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
-              ctx.closePath();
-              ctx.stroke();
+            // Draw cyan tracking quad on display canvas (scale from scan coordinates)
+            if (displayCtx && code.location) {
+              const scaleX = displayCanvas.width / scanW;
+              const scaleY = displayCanvas.height / scanH;
+
+              displayCtx.strokeStyle = '#06B6D4';
+              displayCtx.lineWidth = 6;
+              displayCtx.beginPath();
+              displayCtx.moveTo(code.location.topLeftCorner.x * scaleX, code.location.topLeftCorner.y * scaleY);
+              displayCtx.lineTo(code.location.topRightCorner.x * scaleX, code.location.topRightCorner.y * scaleY);
+              displayCtx.lineTo(code.location.bottomRightCorner.x * scaleX, code.location.bottomRightCorner.y * scaleY);
+              displayCtx.lineTo(code.location.bottomLeftCorner.x * scaleX, code.location.bottomLeftCorner.y * scaleY);
+              displayCtx.closePath();
+              displayCtx.stroke();
             }
           } catch (e) {
             recvInvalidFrames++;
           }
         }
 
-        // 2. Fallback to Matrix Grid Decoder if not QR
+        // 4. Fallback to Matrix Grid Decoder if not QR
         if (!frameProcessed) {
-          const result = receiverDecoder.decodeImageData(imgData);
-          if (result.success) {
-            recvValidFrames++;
-            if (result.corners && ctx) {
-              ctx.strokeStyle = '#10B981';
-              ctx.lineWidth = 3;
-              ctx.beginPath();
-              ctx.moveTo(result.corners.topLeft.x, result.corners.topLeft.y);
-              ctx.lineTo(result.corners.topRight.x, result.corners.topRight.y);
-              ctx.lineTo(result.corners.bottomRight.x, result.corners.bottomRight.y);
-              ctx.lineTo(result.corners.bottomLeft.x, result.corners.bottomLeft.y);
-              ctx.closePath();
-              ctx.stroke();
+          const fullImgData = displayCtx?.getImageData(0, 0, displayCanvas.width, displayCanvas.height);
+          if (fullImgData) {
+            const result = receiverDecoder.decodeImageData(fullImgData);
+            if (result.success) {
+              recvValidFrames++;
+              if (result.corners && displayCtx) {
+                displayCtx.strokeStyle = '#10B981';
+                displayCtx.lineWidth = 4;
+                displayCtx.beginPath();
+                displayCtx.moveTo(result.corners.topLeft.x, result.corners.topLeft.y);
+                displayCtx.lineTo(result.corners.topRight.x, result.corners.topRight.y);
+                displayCtx.lineTo(result.corners.bottomRight.x, result.corners.bottomRight.y);
+                displayCtx.lineTo(result.corners.bottomLeft.x, result.corners.bottomLeft.y);
+                displayCtx.closePath();
+                displayCtx.stroke();
+              }
+            } else {
+              recvInvalidFrames++;
             }
-          } else {
-            recvInvalidFrames++;
           }
         }
 
@@ -544,7 +613,8 @@ function updateReceiverTelemetry() {
   document.getElementById('recv-stat-blocks')!.innerText = `${fountain.getDecodedBlocksCount()} / ${fountain.K}`;
   document.getElementById('recv-stat-captured')!.innerText = totalFrames.toString();
 
-  if (fountain.isComplete() && !reconstructedBlobUrl) {
+  if (fountain.isComplete() && !isReconstructionFinished) {
+    isReconstructionFinished = true;
     finishReceiverReconstruction();
   }
 }
